@@ -1,4 +1,4 @@
-﻿name: ALP_Build_Kernel_Release
+﻿name: alp_Build_Kernel_Release
 run-name: "${{ github.event.inputs.version }} - Release"
 on:
   workflow_dispatch:
@@ -48,9 +48,7 @@ jobs:
     strategy:
       matrix:
         branch:
-          
           - ALP_EMUI9.1_RKSU
-
         pm: [false, true]
 
     steps:
@@ -97,12 +95,210 @@ jobs:
 
         BRANCH='${{ matrix.branch }}'
         case "$BRANCH" in
-        
+          MHA_EMUI9.0_KernelSU)
+            DEFCONFIG="merge_hi3660_defconfig"
+            os_version="9"
+            tool="gcc" ;;
+          MHA_EMUI9.0_KernelSU-Next)
+            DEFCONFIG="merge_hi3660_defconfig"
+            os_version="9"
+            tool="gcc" ;;
+          MHA_EMUI9.0_SukiSU-Ultra)
+            DEFCONFIG="merge_hi3660_defconfig"
+            os_version="9"
+            tool="gcc" ;;
+          MHA_EMUI9.0_RKSU)
+            DEFCONFIG="merge_hi3660_defconfig"
+            os_version="9"
+            tool="gcc" ;;
+          MHA_EMUI9.0_ReSukiSU)
+            DEFCONFIG="merge_hi3660_defconfig"
+            os_version="9"
+            tool="gcc" ;;
+          MHA_EMUI9.0_ReSukiSU_SuSFS_KPM)
+            DEFCONFIG="merge_hi3660_defconfig"
+            os_version="9"
+            tool="gcc" ;;
+          MHA_HarmonyOS2.0_KernelSU)
+            DEFCONFIG="merge_hi3660_defconfig"
+            os_version="9"
+            tool="gcc" ;;
+          MHA_HarmonyOS2.0_KernelSU-Next)
+            DEFCONFIG="merge_hi3660_defconfig"
+            os_version="9"
+            tool="gcc" ;;
+          MHA_HarmonyOS2.0_KernelSU-Next_DroidSpace)
+            DEFCONFIG="merge_hi3660_defconfig"
+            os_version="9"
+            tool="gcc" ;;
+          MHA_HarmonyOS2.0_SukiSU-Ultra)
+            DEFCONFIG="merge_hi3660_defconfig"
+            os_version="9"
+            tool="gcc" ;;
+          MHA_HarmonyOS2.0_RKSU)
+            DEFCONFIG="merge_hi3660_defconfig"
+            os_version="9"
+            tool="gcc" ;;
+          MHA_HarmonyOS2.0_ReSukiSU)
+            DEFCONFIG="merge_hi3660_defconfig"
+            os_version="9"
+            tool="gcc" ;;
+          MHA_HarmonyOS2.0_ReSukiSU_SuSFS_KPM)
+            DEFCONFIG="merge_hi3660_defconfig"
+            os_version="9"
+            tool="gcc" ;;
+          MAR_EMUI10.0_RKSU)
+            DEFCONFIG="merge_kirin710_defconfig"
+            os_version="10"
+            tool="clang" ;;
+          DUK_HarmonyOS2.0_KernelSU)
+            DEFCONFIG="merge_hi3660_defconfig"
+            os_version="9"
+            tool="gcc" ;;
+          VCE_EMUI9.0_KernelSU)
+            DEFCONFIG="merge_kirin970_defconfig"
+            os_version="9"
+            tool="gcc" ;;
+          VCE_EMUI9.0_SukiSU-Ultra)
+            DEFCONFIG="merge_kirin970_defconfig"
+            os_version="9"
+            tool="gcc" ;;
+          VTR_EMUI9.0_KernelSU)
+            DEFCONFIG="merge_hi3660_defconfig"
+            os_version="9"
+            tool="gcc" ;;
+          VTR_EMUI9.1_KernelSU)
+            DEFCONFIG="merge_hi3660_defconfig"
+            os_version="9"
+            tool="gcc" ;;
+          VTR_HarmonyOS2.0_KernelSU)
+            DEFCONFIG="merge_hi3660_defconfig"
+            os_version="9"
+            tool="gcc" ;;
+          VKY_EMUI9.0_RKSU)
+            DEFCONFIG="merge_hi3660_defconfig"
+            os_version="9"
+            tool="gcc" ;;
+          VKY_HarmonyOS2.0_RKSU)
+            DEFCONFIG="merge_hi3660_defconfig"
+            os_version="9"
+            tool="gcc" ;;
+          JKM_EMUI9.1_KernelSU)
+            DEFCONFIG="merge_kirin710_defconfig"
+            os_version="9"
+            tool="gcc" ;;
+          JKM_HarmonyOS2.0_KernelSU)
+            DEFCONFIG="merge_kirin710_defconfig"
+            os_version="9"
+            tool="gcc" ;;
+          STF_EMUI9.0_KernelSU)
+            DEFCONFIG="merge_hi3660_defconfig"
+            os_version="9"
+            tool="gcc" ;;
+          STK_EMUI9.1_RKSU)
+            DEFCONFIG="merge_kirin710_defconfig"
+            os_version="9"
+            tool="gcc" ;;
+          SEA-AL00-TL00_EMUI9.1_RKSU)
+              DEFCONFIG="merge_orlando_defconfig"
+              os_version="9"
+              tool="gcc" ;;
+          INE_EMUI9.1_RKSU)
+            DEFCONFIG="merge_kirin710_defconfig"
+            os_version="9"
+            tool="gcc" ;;
+          CDY_HarmonyOS2.0_KernelSU)
+            DEFCONFIG="merge_denver_defconfig"
+            os_version="10"
+            tool="clang" ;;
           ALP_EMUI9.1_RKSU)
             DEFCONFIG="merge_kirin970_defconfig"
             os_version="9"
             tool="gcc" ;;
-         
+          GLK_EMUI9.1_RKSU)
+            DEFCONFIG="merge_kirin710_defconfig"
+            os_version="9"
+            tool="gcc" ;;
+          ALP_EMUI9.0_RKSU)
+            DEFCONFIG="merge_kirin970_defconfig"
+            os_version="9"
+            tool="gcc" ;;
+          BND_EMUI9.1_RKSU)
+            DEFCONFIG="merge_hi6250_defconfig"
+            os_version="9"
+            tool="gcc" ;;
+          CPN_LineageOS17.1_KernelSU-Next)
+            DEFCONFIG="bach_defconfig"
+            os_version="10"
+            tool="gcc" ;;
+          EML_EMUI9.1_KernelSU)
+            DEFCONFIG="merge_kirin970_defconfig"
+            os_version="9"
+            tool="gcc" ;;
+          BLA_EMUI9.1_KernelSU)
+            DEFCONFIG="merge_kirin970_defconfig"
+            os_version="9"
+            tool="gcc" ;;
+          LYA_EMUI9.0_RKSU)
+            DEFCONFIG="merge_kirin980_defconfig"
+            os_version="9"
+            tool="gcc" ;;
+          SEA-AL10-TL10-TL10HKA_EMUI9.1_ReSukiSU)
+            DEFCONFIG="merge_kirin980_defconfig"
+            os_version="9"
+            tool="gcc" ;;
+          PAR_HarmonyOS2.0_RKSU)
+              DEFCONFIG="merge_kirin970_defconfig"
+              os_version="9"
+              tool="gcc" ;;
+          NEO_EMUI9.0_RKSU)
+              DEFCONFIG="merge_kirin970_defconfig"
+              os_version="9"
+              tool="gcc" ;;
+          ELE_EMUI9.1_RKSU)
+              DEFCONFIG="merge_kirin980_defconfig"
+              os_version="9"
+              tool="gcc" ;;
+          HWI_HarmonyOS2.0_RKSU)
+              DEFCONFIG="merge_hi3660_defconfig"
+              os_version="9"
+              tool="gcc" ;;
+          FLA_EMUI9.1_RKSU) 
+              DEFCONFIG="merge_hi6250_defconfig"
+              os_version="9"
+              tool="gcc" ;;
+          HRY_EMUI9.1_RKSU)
+              DEFCONFIG="merge_kirin710_defconfig"
+              os_version="9"
+              tool="gcc" ;;
+          VCE_HarmonyOS3.0_RKSU)
+              DEFCONFIG="merge_kirin970_defconfig"
+              os_version="10"
+              tool="clang" ;;
+          HLK_EMUI10.1_RKSU)
+              DEFCONFIG="merge_orlando_defconfig"
+              os_version="10"
+              tool="clang" ;;
+          MAR_EMUI10.0_RKSU)
+              DEFCONFIG="merge_kirin710_defconfig"
+              os_version="10"
+              tool="clang" ;;
+          CDY_HarmonyOS2.0_RKSU)
+              DEFCONFIG="merge_denver_defconfig"
+              os_version="10"
+              tool="clang" ;;
+          CDY_HarmonyOS3.0_RKSU)
+              DEFCONFIG="merge_denver_defconfig"
+              os_version="10"
+              tool="clang" ;;
+          COR_EMUI9.1_RKSU)
+              DEFCONFIG="merge_kirin970_defconfig"
+              os_version="10"
+              tool="gcc" ;;
+          POT_EMUI9.0_RKSU)
+              DEFCONFIG="merge_kirin710_defconfig"
+              os_version="9"
+              tool="gcc" ;;
         esac
 
         if [ -z "$DEFCONFIG" ]; then
