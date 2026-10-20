@@ -1,1 +1,370 @@
+﻿name: ALP_Build_Kernel_Release
+run-name: "${{ github.event.inputs.version }} - Release"
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '版本号'
+        required: true
+        type: string
+        default: 'Build_Kernel_Release'
+      exclude_branches:
+        description: '排除编译的分支名，多个用逗号分隔'
+        required: false
+        type: string
+        default: ''
+      ksunext_command:
+        description: 'KernelSU-Next自定义集成命令'
+        required: false
+        type: string
+        default: 'curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -s legacy'
+      rksu_command:
+        description: 'RKSU自定义集成命令'
+        required: false
+        type: string
+        default: 'curl -LSs "https://raw.githubusercontent.com/rsuntk/KernelSU/main/kernel/setup.sh" | bash -s v3.0.0-30-legacy'
+      sukisu_command:
+        description: 'SukiSU-Ultra自定义集成命令'
+        required: false
+        type: string
+        default: 'curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s builtin'
+      resukisu_command:
+        description: 'ReSukiSU自定义集成命令'
+        required: false
+        type: string
+        default: 'curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash'
 
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:20.04
+      options: --privileged
+    defaults:
+      run:
+        shell: bash
+
+    timeout-minutes: 480
+    strategy:
+      matrix:
+        branch:
+          
+          - ALP_EMUI9.1_RKSU
+
+        pm: [false, true]
+
+    steps:
+    - name: Check exclude branches
+      id: check_exclude
+      run: |
+        EXCLUDE_INPUT="${{ github.event.inputs.exclude_branches }}"
+        CURRENT_BRANCH="${{ matrix.branch }}"
+        SKIP=false
+        if [ -n "$EXCLUDE_INPUT" ]; then
+          IFS=',' read -ra EXCLUDED_ARRAY <<< "$EXCLUDE_INPUT"
+          for excluded in "${EXCLUDED_ARRAY[@]}"; do
+            excluded=$(echo "$excluded" | xargs)
+            if [ "$CURRENT_BRANCH" = "$excluded" ]; then
+              SKIP=true
+              break
+            fi
+          done
+        fi
+        echo "skip=$SKIP" >> $GITHUB_OUTPUT
+        if [ "$SKIP" = "true" ]; then
+          echo "Branch $CURRENT_BRANCH is excluded, skipping all steps for this job."
+        fi
+
+    - name: Checkout
+      if: steps.check_exclude.outputs.skip != 'true'
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ matrix.branch }}
+        submodules: false
+        fetch-depth: 1
+        lfs: false
+
+    - name: Set build vars
+      if: steps.check_exclude.outputs.skip != 'true'
+      run: |
+        if [ "${{ matrix.pm }}" = "true" ]; then
+          echo "PM_SUFFIX=_PM" >> $GITHUB_ENV
+          echo "ARTIFACT_NAME=${{ matrix.branch }}_PM" >> $GITHUB_ENV
+        else
+          echo "PM_SUFFIX=" >> $GITHUB_ENV
+          echo "ARTIFACT_NAME=${{ matrix.branch }}" >> $GITHUB_ENV
+        fi
+
+        BRANCH='${{ matrix.branch }}'
+        case "$BRANCH" in
+        
+          ALP_EMUI9.1_RKSU)
+            DEFCONFIG="merge_kirin970_defconfig"
+            os_version="9"
+            tool="gcc" ;;
+         
+        esac
+
+        if [ -z "$DEFCONFIG" ]; then
+          echo "::error::DEFCONFIG is empty for branch $BRANCH. Please set mapping in workflow 'Set build vars' step." >&2
+          exit 1
+        fi
+
+        echo "DEFCONFIG=$DEFCONFIG" >> $GITHUB_ENV
+        echo "os_version=$os_version" >> $GITHUB_ENV
+        echo "tool=$tool" >> $GITHUB_ENV
+
+    - name: Install dependencies
+      if: steps.check_exclude.outputs.skip != 'true'
+      run: |
+        ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+        apt update -y 
+        apt install --no-install-recommends bash sudo gcc-arm-linux-gnueabi binutils binutils-aarch64-linux-gnu tar wget make python2 flex unzip ca-certificates xz-utils mkbootimg cpio device-tree-compiler git git-lfs bc bison build-essential ccache curl flex g++-9 gcc-9 git git-lfs gnupg gperf imagemagick lib32ncurses5-dev lib32readline-dev lib32z1-dev libelf-dev liblz4-tool libncurses5 libncurses5-dev libsdl1.2-dev libssl-dev libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc zip zlib1g-dev -y
+        curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+        sudo apt update
+        sudo apt install gh -y
+
+        git clone --depth=1 https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9 aarch64-linux-android-4.9
+        if [[ "$tool" == "clang" ]]; then
+          mkdir -p prebuilts/gcc/linux-x86/aarch64
+          mkdir -p prebuilts/gcc/linux-x86/arm
+          mkdir -p prebuilts/clang/host/linux-x86
+          cd prebuilts/gcc/linux-x86/aarch64
+          git clone https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9
+          cd aarch64-linux-android-4.9
+          git checkout 84fb09fafc92a3d9b4d160f049d46c3c784cc941
+          cd ../../arm
+          git clone https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9
+          cd arm-linux-androideabi-4.9
+          git checkout 5a8beef7b1aa2c8ca0dfe4a00358559d12dfa3b6
+          cd ../../../../clang/host/linux-x86
+
+          success=0
+          for i in $(seq 1 10); do
+            echo "Attempt $i/10"
+            if wget -c https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/3f889f9c9d42bae85728fa89ba5f92a01704fd83.tar.gz && tar -zxvf 3f889f9c9d42bae85728fa89ba5f92a01704fd83.tar.gz; then
+              success=1
+              break
+            fi
+            sleep 5
+          done
+
+          if [ "$success" -eq 0 ]; then
+            echo "All 10 attempts failed, running fallback"
+            cd ..
+            rm -r linux-x86
+            git clone https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86
+            cd linux-x86
+            git reset --hard 3f889f9c9d42bae85728fa89ba5f92a01704fd83
+          fi
+
+          cd ../../../../
+        fi
+
+    - name: Prepare KernelSU sources (branch-specific)
+      if: steps.check_exclude.outputs.skip != 'true'
+      run: |
+        BRANCH='${{ matrix.branch }}'
+        if [ -f ".ksu-clone_skip" ]; then
+          echo "✅ 发现 .ksu-clone_skip，跳过命令执行。"
+        else
+          echo "🔧 未发现 .ksu-clone_skip，执行命令……"
+            if [[ "$BRANCH" == *"KernelSU-Next"* ]]; then
+              echo "Branch contains KernelSU-Next: running KernelSU-Next setup"
+              rm -rf KernelSU-Next
+              ${{ github.event.inputs.ksunext_command }}
+            elif [[ "$BRANCH" == *"KernelSU"* ]]; then
+              echo "Branch contains KernelSU: running KernelSU main setup"
+              rm -rf KernelSU
+              curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s v0.9.2
+            elif [[ "$BRANCH" == *"RKSU"* ]]; then
+              echo "Branch contains RKSU: running RKSU setup"
+              rm -rf KernelSU
+              ${{ github.event.inputs.rksu_command }}
+            elif [[ "$BRANCH" == *"SukiSU-Ultra"* ]]; then
+              echo "Branch contains SukiSU-Ultra: running SukiSU-Ultra setup"
+              rm -rf KernelSU
+              ${{ github.event.inputs.sukisu_command }}
+              cd KernelSU
+              git reset --hard 4a0c01e
+            elif [[ "$BRANCH" == *"ReSukiSU"* ]]; then
+              echo "Branch contains ReSukiSU: running ReSukiSU setup"
+              rm -rf KernelSU
+              ${{ github.event.inputs.resukisu_command }}
+            else
+              echo "No KernelSU-related branch pattern matched; skipping vendor kernel setup"
+            fi
+        fi
+
+    - name: Build Kernel for ${{ matrix.branch }} (pm=${{ matrix.pm }})
+      if: steps.check_exclude.outputs.skip != 'true'
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        CURRENT_DATE=$(date +'%Y-%m-%d')
+        if [ "${{ matrix.pm }}" = "true" ]; then
+          SELINUX_MODE="permissive"
+        else
+          SELINUX_MODE="enforcing"
+        fi
+
+        echo kernel:${SELINUX_MODE}
+        echo os_version:$os_version
+        echo tool:$tool
+        echo time:$CURRENT_DATE
+
+        sudo ln -sf /usr/bin/python2.7 /usr/bin/python
+
+        if [ -d include/config ]; then
+          echo "Find config, will remove it"
+          rm -rf include/config
+        else
+          echo "No Config, good."
+        fi
+
+        if [[ "$tool" == "gcc" ]]; then
+          export ARCH=arm64
+          export PATH=$PATH:$(pwd)/aarch64-linux-android-4.9/bin/
+          export CROSS_COMPILE=aarch64-linux-android-
+        elif [[ "$tool" == "clang" ]]; then
+          export CLANG_PREBUILTS_PATH=$(pwd)/prebuilts/clang/host/linux-x86/clang-r346389c/
+          export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd)/prebuilts/clang/host/linux-x86/clang-r346389c/lib64/
+          export CROSS_COMPILE=aarch64-linux-android-
+          export ARCH=arm64
+          export PATH=$(pwd)/prebuilts/clang/host/linux-x86/clang-r346389c/bin:$(pwd)/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/bin:$PATH
+        fi
+
+        if [ "${{ matrix.pm }}" = "true" ]; then
+          sed -i 's/^# CONFIG_SECURITY_SELINUX_DEVELOP is not set$/CONFIG_SECURITY_SELINUX_DEVELOP=y/' "${PWD}/arch/arm64/configs/$DEFCONFIG"
+          sed -i 's/^\(CONFIG_LOCALVERSION=".*\)\(_xixiaobei[^"]*@Github"\)$/\1_PM\2/' "${PWD}/arch/arm64/configs/$DEFCONFIG"
+        fi
+
+        if [[ "$tool" == "gcc" ]]; then
+          make ARCH=arm64 CROSS_COMPILE_ARM32=arm-linux-gnueabi- O=out "${DEFCONFIG}"
+          make ARCH=arm64 CROSS_COMPILE_ARM32=arm-linux-gnueabi- O=out -j$(nproc --all)
+        elif [[ "$tool" == "clang" ]]; then
+          make ARCH=arm64 CROSS_COMPILE_ARM32=arm-linux-gnueabi- O=out CC="ccache clang" LLVM_IAS=0 "${DEFCONFIG}"
+          make ARCH=arm64 CROSS_COMPILE_ARM32=arm-linux-gnueabi- O=out CC="ccache clang" LLVM_IAS=0 -j$(nproc --all)
+        fi
+
+        if grep -q "CONFIG_KPM=y" "out/.config"; then
+          echo "==========================================="
+          echo "检测到 CONFIG_KPM=y，准备进行内核修补..."
+          cd ./out/arch/arm64/boot/
+          gh release download --repo SukiSU-Ultra/SukiSU_KernelPatch_patch --pattern "patch_linux"
+          chmod +x ./patch_linux
+          echo "正在运行 patch_linux 工具..."
+          ./patch_linux
+          if [ -f "oImage" ]; then
+              echo "检测到 oImage，替换原 Image..."
+              rm -rf Image.gz
+              mv -f oImage Image
+          fi
+          echo "正在重新压缩为 Image.gz..."
+          gzip -k Image
+          cd ../../../../
+          echo "==========================================="
+        else
+          echo "未检测到 CONFIG_KPM 开启，跳过 KPM 修补流程。"
+        fi
+
+        if [ -f "tools/mkbootimg" ]; then
+          cp ./out/arch/arm64/boot/Image.gz ./tools/
+          sed -i 's/--kernel[[:space:]]\+kernel/--kernel Image.gz/g' tools/pack_kernerimage_cmd.sh
+          sed -i 's/--output[[:space:]]\+.*$/--output "${ARTIFACT_NAME}.img"/g' tools/pack_kernerimage_cmd.sh
+          sed -i 's/androidboot.selinux=enforcing/androidboot.selinux=${SELINUX_MODE}/g' tools/pack_kernerimage_cmd.sh
+          sed -i 's/androidboot.selinux=permissive/androidboot.selinux=${SELINUX_MODE}/g' tools/pack_kernerimage_cmd.sh
+          sed -i 's/\(--os_patch_level\)[[:space:]]\+[^[:space:]]\+[[:space:]]\+\(--output[[:space:]]\+"${ARTIFACT_NAME}\.img"\)/\1 "$CURRENT_DATE" \2/g' tools/pack_kernerimage_cmd.sh
+        fi
+
+        if [ "$os_version" = "9" ]; then
+            cmdline=(
+                --kernel out/arch/arm64/boot/Image.gz
+                --base 0x0
+                --cmdline "loglevel=4 initcall_debug=n page_tracker=on slub_min_objects=16 unmovable_isolate1=2:192M,3:224M,4:256M printktimer=0xfff0a000,0x534,0x538 androidboot.selinux=${SELINUX_MODE} buildvariant=user"
+                --tags_offset 0x07A00000
+                --kernel_offset 0x00080000
+                --ramdisk_offset 0x07c00000
+                --header_version 1
+                --os_version 9
+                --os_patch_level "$CURRENT_DATE"
+                --output "${ARTIFACT_NAME}.img"
+            )
+        elif [ "$os_version" = "8" ]; then
+            cmdline=(
+                --kernel out/arch/arm64/boot/Image.gz
+                --base 0x400000
+                --cmdline "loglevel=4 initcall_debug=n page_tracker=on slub_min_objects=12 unmovable_isolate1=2:192M,3:224M,4:256M printktimer=0xfff0a000,0x534,0x538 androidboot.selinux=${SELINUX_MODE} buildvariant=user"
+                --tags_offset 0x07A00000
+                --kernel_offset 0x00080000
+                --ramdisk_offset 0x07c00000
+                --os_version 8.0.0
+                --os_patch_level "$CURRENT_DATE"
+                --output "${ARTIFACT_NAME}.img"
+            )
+        elif [ "$os_version" = "10" ]; then
+            cmdline=(
+                --kernel out/arch/arm64/boot/Image.gz
+                --base 0x0
+                --cmdline "loglevel=4 page_tracker=on ssbd=kernel printktimer=0xfff0a000,0x534,0x538 androidboot.selinux=${SELINUX_MODE} unmovable_isolate1=2:192M,3:224M,4:256M buildvariant=user"
+                --tags_offset 0x66000000
+                --kernel_offset 0x00080000
+                --ramdisk_offset 0x66200000
+                --header_version 1
+                --os_version 10
+                --os_patch_level "$CURRENT_DATE"
+                --output "${ARTIFACT_NAME}.img"
+            )
+        fi
+
+        if [ -f "tools/mkbootimg" ]; then
+          echo "使用 tools/mkbootimg 生成镜像..."
+          cd tools
+          bash ./pack_kernerimage_cmd.sh
+          cd ..
+          cp tools/"${ARTIFACT_NAME}.img" ./
+        else
+          echo "未找到 tools/mkbootimg，下载mkbootimg..."
+          git clone https://android.googlesource.com/platform/system/tools/mkbootimg/
+          mkbootimg/mkbootimg.py "${cmdline[@]}"
+        fi
+
+    - name: Upload Kernel Artifact
+      if: steps.check_exclude.outputs.skip != 'true'
+      uses: actions/upload-artifact@v5
+      with:
+        name: ${{ env.ARTIFACT_NAME }}
+        path: "${{ env.ARTIFACT_NAME }}.img"
+
+  release:
+    name: Draft A New Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./all-artifacts
+
+      - name: Extract all Artifact files and clean up zip files
+        run: |
+          for zipfile in ./all-artifacts/**/*.zip; do
+            if [ -f "$zipfile" ]; then
+              unzip -o "$zipfile" -d "$(dirname "$zipfile")"
+              rm "$zipfile"
+            fi
+          done
+
+      - name: Draft a new Release and upload files
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.event.inputs.version }}
+          tag_name: ${{ github.event.inputs.version }}
+          files: ./all-artifacts/**/*.img
+          draft: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
