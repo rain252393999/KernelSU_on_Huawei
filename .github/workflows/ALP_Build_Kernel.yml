@@ -32,7 +32,7 @@ on:
         description: 'ReSukiSU自定义集成命令'
         required: false
         type: string
-        default: 'curl -LSs "https://raw.githubusercontent.com/Baka-SU/BakaSU/main/kernel/setup.sh" | bash" | bash'
+        default: 'curl -LSs "https://raw.githubusercontent.com/Baka-SU/BakaSU/main/kernel/setup.sh" | bash'
 
 jobs:
   build:
