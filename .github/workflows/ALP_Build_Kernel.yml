@@ -48,7 +48,7 @@ jobs:
     strategy:
       matrix:
         branch:
-          - ALP_EMUI9.1_RKSU
+          - ALP_EMUI9.1_ReSukiSU
         pm: [false, true]
 
     steps:
