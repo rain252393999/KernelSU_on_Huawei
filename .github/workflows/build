@@ -529,7 +529,21 @@ jobs:
           git clone https://android.googlesource.com/platform/system/tools/mkbootimg/
           mkbootimg/mkbootimg.py "${cmdline[@]}"
         fi
-
+  # ========= 新增这一段 =========
+    - name: Check symbol vfs_read / vfs_read_iter
+      if: steps.check_exclude.outputs.skip != 'true'
+      run: |
+        echo "===== Enable CONFIG_KALLSYMS ====="
+        if [ -f out/.config ]; then
+          scripts/config --file out/.config --enable KALLSYMS
+          scripts/config --file out/.config --enable KALLSYMS_ALL
+        fi
+        echo "===== Search vfs_read & vfs_read_iter in out/vmlinux ====="
+        export PATH=$PATH:$(pwd)/aarch64-linux-android-4.9/bin/
+        aarch64-linux-android-nm out/vmlinux | grep -E "vfs_read|vfs_read_iter" || echo "=> vfs_read / vfs_read_iter NOT FOUND in vmlinux"
+        echo "===== Also check System.map ====="
+        grep -E "vfs_read|vfs_read_iter" out/System.map || echo "=> vfs_read / vfs_read_iter NOT FOUND in System.map"
+    # ==============================
     - name: Upload Kernel Artifact
       if: steps.check_exclude.outputs.skip != 'true'
       uses: actions/upload-artifact@v5
