@@ -388,15 +388,17 @@ jobs:
               ${{ github.event.inputs.sukisu_command }}
               cd KernelSU
               git reset --hard 4a0c01e
-            elif [[ "$BRANCH" == *"ReSukiSU"* ]]; then
+           elif [[ "$BRANCH" == *"ReSukiSU"* ]]; then
               echo "Branch contains ReSukiSU: running ReSukiSU setup"
               rm -rf KernelSU
               ${{ github.event.inputs.resukisu_command }}
               # ==========新增：源码里面搜索vfs_read，提前看有没有这个符号定义==========
-              echo "===== 源码搜索 vfs_read ====="
-              grep -rn "vfs_read" --include="*.c" --include="*.h" ./ || echo "源码内找不到 vfs_read"
-              echo "===== 源码搜索 vfs_read_iter ====="
-              grep -rn "vfs_read_iter" --include="*.c" --include="*.h" ./ || echo "源码内找不到 vfs_read_iter"
+              echo "===== 源码搜索 vfs_read（仅内核源码，排除KernelSU文件夹） ====="
+              grep -rn "vfs_read" --include="*.c" --include="*.h" ./ --exclude-dir=KernelSU || echo "源码内找不到 vfs_read"
+              echo "===== 源码搜索 vfs_read_iter（仅内核源码，排除KernelSU文件夹） ====="
+              grep -rn "vfs_read_iter" --include="*.c" --include="*.h" ./ --exclude-dir=KernelSU || echo "源码内找不到 vfs_read_iter"
+              echo "===== 仅 fs/ 目录精准搜索 vfs_read ====="
+              grep -rn "vfs_read" --include="*.c" fs/ || echo "fs目录无vfs_read"
             else
               echo "No KernelSU-related branch pattern matched; skipping vendor kernel setup"
             fi
