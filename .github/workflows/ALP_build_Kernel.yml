@@ -392,6 +392,11 @@ jobs:
               echo "Branch contains ReSukiSU: running ReSukiSU setup"
               rm -rf KernelSU
               ${{ github.event.inputs.resukisu_command }}
+              # ==========新增：源码里面搜索vfs_read，提前看有没有这个符号定义==========
+              echo "===== 源码搜索 vfs_read ====="
+              grep -rn "vfs_read" --include="*.c" --include="*.h" ./ || echo "源码内找不到 vfs_read"
+              echo "===== 源码搜索 vfs_read_iter ====="
+              grep -rn "vfs_read_iter" --include="*.c" --include="*.h" ./ || echo "源码内找不到 vfs_read_iter"
             else
               echo "No KernelSU-related branch pattern matched; skipping vendor kernel setup"
             fi
