@@ -210,7 +210,7 @@ jobs:
           CDY_HarmonyOS2.0_KernelSU)
             DEFCONFIG="merge_denver_defconfig"
             os_version="10"
-            tool="clang" ;;、、、
+            tool="clang" ;;
           ALP_EMUI9.1_RKSU)
             DEFCONFIG="merge_kirin970_defconfig"
             os_version="9"
@@ -388,14 +388,14 @@ jobs:
               ${{ github.event.inputs.sukisu_command }}
               cd KernelSU
               git reset --hard 4a0c01e
-          elif [[ "$BRANCH" == *"ReSukiSU"* ]]; then
+            elif [[ "$BRANCH" == *"ReSukiSU"* ]]; then
               echo "Branch contains ReSukiSU: running ReSukiSU setup"
               rm -rf KernelSU
               ${{ github.event.inputs.resukisu_command }}
               if [ -f KernelSU/kernel/Kbuild ]; then
                 sed -i '/manual_hook_check.mk/s/^/#/' KernelSU/kernel/Kbuild
               else
-                echo " Kbuild not found, skip sed"
+                echo "Kbuild not found, skip sed"
               fi
               echo "===== 源码搜索 vfs_read（仅内核源码，排除KernelSU文件夹） ====="
               grep -rn "vfs_read" --include="*.c" --include="*.h" ./ --exclude-dir=KernelSU || echo "源码内找不到 vfs_read"
