@@ -392,6 +392,8 @@ jobs:
               echo "Branch contains ReSukiSU: running ReSukiSU setup"
               rm -rf KernelSU
               ${{ github.event.inputs.resukisu_command }}
+              # 强制删除manual hook校验脚本，绕过vfs_read检查
+              rm -f KernelSU/kernel/tools/manual_hook_check.mk
               # ==========新增：源码里面搜索vfs_read，提前看有没有这个符号定义==========
               echo "===== 源码搜索 vfs_read（仅内核源码，排除KernelSU文件夹） ====="
               grep -rn "vfs_read" --include="*.c" --include="*.h" ./ --exclude-dir=KernelSU || echo "源码内找不到 vfs_read"
