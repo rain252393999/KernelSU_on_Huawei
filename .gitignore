@@ -1,0 +1,28 @@
+# build outputs
+out/
+*.o
+*.o.*
+*.a
+*.cmd
+*.ko
+*.mod
+*.mod.c
+*.symvers
+*.order
+vmlinux
+vmlinux.o
+System.map
+Image
+Image.gz
+Image.lz4
+dtb.img
+*.dtb
+*.dtbo
+# archives/images
+*.zip
+*.tar
+*.tar.gz
+*.7z
+*.img
+# misc
+.DS_Store
