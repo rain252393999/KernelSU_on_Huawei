@@ -1,3 +1,5 @@
+LD = ld.lld
+ld_flags += -fuse-ld=lld
 #
 # Building a vDSO image for AArch64.
 #
